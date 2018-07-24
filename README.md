@@ -18,6 +18,26 @@ Control commands are done in /gadget/rat/control, acknowledges in /gadget/rat/fe
 }
 ```
 
+### Get Software version
+
+```
+{  
+   "mode":"version"
+}
+```
+
+### Update Software
+
+The Update feature is very experimental and should just be used if you have access to the hardware in case something goes wrong!
+
+```
+{  
+   "mode":"ota",
+   "server":"domain.ch",
+   "filename":"file.bin"
+}
+```
+
 ## Protocol Acks
 
 ### OK

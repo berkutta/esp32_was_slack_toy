@@ -25,6 +25,9 @@
 #include "config.h"
 
 #include "servo.h"
+#include "ota.h"
+
+#define software_version "1.0.0"
 
 static const char *TAG = "mqtt";
 
@@ -87,14 +90,14 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
                                 cJSON_IsNumber(minimum_amplitude) && 
                                 cJSON_IsNumber(maximum_amplitude) &&
                                 cJSON_IsNumber(delay) ) {
-                                    cJSON *ok_answer = cJSON_CreateObject();
+                                cJSON *ok_answer = cJSON_CreateObject();
 
-                                    cJSON_AddStringToObject(ok_answer, "status", "OK");
-                                    
-                                    msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(ok_answer), 0, 0, 0);
-                                    ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-                                    
-                                    servo_run(amount->valueint, minimum_amplitude->valueint, maximum_amplitude->valueint, delay->valueint);
+                                cJSON_AddStringToObject(ok_answer, "status", "OK");
+                                
+                                msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(ok_answer), 0, 0, 0);
+                                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                                
+                                servo_run(amount->valueint, minimum_amplitude->valueint, maximum_amplitude->valueint, delay->valueint);
                             } else {
                                 cJSON *nok_answer = cJSON_CreateObject();
 
@@ -105,6 +108,52 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
                             }
 
                             
+                        } else if(strcmp(mode->valuestring, "version") == 0) {
+                            cJSON *answer = cJSON_CreateObject();
+
+                            cJSON_AddStringToObject(answer, "status", "OK");
+                            cJSON_AddStringToObject(answer, "version", software_version);
+                            
+                            
+                            msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(answer), 0, 0, 0);
+                            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+                        } else if(strcmp(mode->valuestring, "ota") == 0) {
+                            const cJSON *server = NULL;
+                            const cJSON *filename = NULL;
+
+                            server = cJSON_GetObjectItemCaseSensitive(dataset, "server");
+                            filename = cJSON_GetObjectItemCaseSensitive(dataset, "filename");
+
+                            if( cJSON_IsString(server) && (server->valuestring != NULL) &&
+                                cJSON_IsString(filename) && (filename->valuestring != NULL) ) {
+                                    ESP_LOGI(TAG, "Trying to start OTA");
+                                    if(ota_run(server->valuestring, " ", filename->valuestring) == 0) {
+                                        cJSON *ok_answer = cJSON_CreateObject();
+
+                                        cJSON_AddStringToObject(ok_answer, "status", "OK");
+                                        
+                                        msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(ok_answer), 0, 0, 0);
+                                        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+                                        ESP_LOGI(TAG, "Prepare to restart system!");
+                                        esp_restart();
+                                    } else {
+                                        cJSON *nok_answer = cJSON_CreateObject();
+
+                                        cJSON_AddStringToObject(nok_answer, "status", "Error");
+                                        
+                                        msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(nok_answer), 0, 0, 0);
+                                        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                                    }
+                            }
+                        } else {
+                            cJSON *nok_answer = cJSON_CreateObject();
+
+                            cJSON_AddStringToObject(nok_answer, "status", "Error");
+                            
+                            msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(nok_answer), 0, 0, 0);
+                            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
                         }
                     }
                 }
