@@ -4,7 +4,7 @@ Litte shitty software to hook up a Servo via ESP32 to MQTT.
 
 ## Protocol description
 
-Everything is done in topic /gadgets/rat
+Control commands are done in /gadget/rat/control, acknowledges in /gadget/rat/feedback
 
 ### Let Servo do it's thing
 

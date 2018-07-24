@@ -39,7 +39,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
 
-            msg_id = esp_mqtt_client_subscribe(client, "/gadgets/rat", 1);
+            msg_id = esp_mqtt_client_subscribe(client, "/gadget/rat/control", 1);
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
             break;
@@ -63,9 +63,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
 
-            if(strncmp(event->topic, "/gadgets/rat", event->topic_len) == 0) {
-                //const cJSON *dataset = NULL;
-
+            if(strncmp(event->topic, "/gadget/rat/control", event->topic_len) == 0) {
                 const cJSON *mode = NULL;
 
                 cJSON *dataset = cJSON_Parse(event->data);
@@ -89,12 +87,11 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
                                 cJSON_IsNumber(minimum_amplitude) && 
                                 cJSON_IsNumber(maximum_amplitude) &&
                                 cJSON_IsNumber(delay) ) {
-                                    // printf("Minimum: %lf, Maximum: %lf, Delay: %lf \n", minimum_amplitude->valuedouble, maximum_amplitude->valuedouble, delay->valuedouble);
                                     cJSON *ok_answer = cJSON_CreateObject();
 
                                     cJSON_AddStringToObject(ok_answer, "status", "OK");
                                     
-                                    msg_id = esp_mqtt_client_publish(client, "/gadgets/rat", cJSON_Print(ok_answer), 0, 0, 0);
+                                    msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(ok_answer), 0, 0, 0);
                                     ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
                                     
                                     servo_run(amount->valueint, minimum_amplitude->valueint, maximum_amplitude->valueint, delay->valueint);
@@ -103,7 +100,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 
                                 cJSON_AddStringToObject(nok_answer, "status", "Error");
                                 
-                                msg_id = esp_mqtt_client_publish(client, "/gadgets/rat", cJSON_Print(nok_answer), 0, 0, 0);
+                                msg_id = esp_mqtt_client_publish(client, "/gadget/rat/feedback", cJSON_Print(nok_answer), 0, 0, 0);
                                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
                             }
 
