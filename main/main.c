@@ -118,6 +118,7 @@ static void wifi_init(void)
         .sta = {
             .ssid = wifi_ssid,
             .password = wifi_password,
+            .scan_method = true
         },
     };
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
