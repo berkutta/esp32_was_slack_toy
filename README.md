@@ -1,6 +1,6 @@
 # MQTT (/Slack) controlled Servo
 
-Litte shitty software to hook up a Servo via ESP32 to MQTT.
+Little shitty software to hook up a Servo via ESP32 to MQTT.
 
 ## Protocol description
 
