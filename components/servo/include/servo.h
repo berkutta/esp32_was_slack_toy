@@ -8,6 +8,6 @@ void servo_init(void);
 
 void servo_set(uint8_t position);
 
-void servo_run(void);
+void servo_run(int amount, int minimum, int maximum, int delay);
 
 #endif

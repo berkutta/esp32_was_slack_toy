@@ -51,13 +51,18 @@ void servo_set(uint8_t position) {
 		ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
 }
 
-void servo_run(void) {
-    for(int i = 0; i <= 3; i++) {
-        servo_set(servo_low);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-        servo_set(servo_high);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+void servo_run(int amount, int minimum, int maximum, int delay) {
+	ESP_LOGI(tag, "amount: %d", amount);
+	ESP_LOGI(tag, "minimum: %d", minimum);
+	ESP_LOGI(tag, "maximum: %d", maximum);
+	ESP_LOGI(tag, "delay: %d ms", delay);
+
+    for(int i = 0; i <= amount; i++) {
+        servo_set(minimum);
+        vTaskDelay(delay / portTICK_PERIOD_MS);
+        servo_set(maximum);
+        vTaskDelay(delay / portTICK_PERIOD_MS);
     }
 
-    servo_set(servo_low);
+    servo_set(minimum);
 }

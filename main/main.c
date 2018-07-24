@@ -20,6 +20,7 @@
 
 #include "esp_log.h"
 #include "mqtt_client.h"
+#include "cJSON.h"
 
 #include "config.h"
 
@@ -63,7 +64,55 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
             printf("DATA=%.*s\r\n", event->data_len, event->data);
 
             if(strncmp(event->topic, "/gadgets/rat", event->topic_len) == 0) {
-                if(strncmp(event->data, "run", event->data_len) == 0)   servo_run();  
+                //const cJSON *dataset = NULL;
+
+                const cJSON *mode = NULL;
+
+                cJSON *dataset = cJSON_Parse(event->data);
+
+                if(dataset != NULL) {
+                    mode = cJSON_GetObjectItemCaseSensitive(dataset, "mode");
+
+                    if (cJSON_IsString(mode) && (mode->valuestring != NULL)) {
+                        if(strcmp(mode->valuestring, "run") == 0) {
+                            const cJSON *amount = NULL;
+                            const cJSON *minimum_amplitude = NULL;
+                            const cJSON *maximum_amplitude = NULL;
+                            const cJSON *delay = NULL;
+
+                            amount = cJSON_GetObjectItemCaseSensitive(dataset, "amount");
+                            minimum_amplitude = cJSON_GetObjectItemCaseSensitive(dataset, "maximum");
+                            maximum_amplitude = cJSON_GetObjectItemCaseSensitive(dataset, "minimum");
+                            delay = cJSON_GetObjectItemCaseSensitive(dataset, "delay");
+
+                            if( cJSON_IsNumber(amount) && 
+                                cJSON_IsNumber(minimum_amplitude) && 
+                                cJSON_IsNumber(maximum_amplitude) &&
+                                cJSON_IsNumber(delay) ) {
+                                    // printf("Minimum: %lf, Maximum: %lf, Delay: %lf \n", minimum_amplitude->valuedouble, maximum_amplitude->valuedouble, delay->valuedouble);
+                                    cJSON *ok_answer = cJSON_CreateObject();
+
+                                    cJSON_AddStringToObject(ok_answer, "status", "OK");
+                                    
+                                    msg_id = esp_mqtt_client_publish(client, "/gadgets/rat", cJSON_Print(ok_answer), 0, 0, 0);
+                                    ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                                    
+                                    servo_run(amount->valueint, minimum_amplitude->valueint, maximum_amplitude->valueint, delay->valueint);
+                            } else {
+                                cJSON *nok_answer = cJSON_CreateObject();
+
+                                cJSON_AddStringToObject(nok_answer, "status", "Error");
+                                
+                                msg_id = esp_mqtt_client_publish(client, "/gadgets/rat", cJSON_Print(nok_answer), 0, 0, 0);
+                                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                            }
+
+                            
+                        }
+                    }
+                }
+
+                // if(strncmp(event->data, "run", event->data_len) == 0)    
             }
             break;
         case MQTT_EVENT_ERROR:
